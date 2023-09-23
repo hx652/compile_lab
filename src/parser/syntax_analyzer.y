@@ -31,12 +31,25 @@ syntax_tree_node *node(const char *node_name, int children_num, ...);
 /* TODO: Complete this definition.
    Hint: See pass_node(), node(), and syntax_tree.h.
          Use forward declaring. */
-%union {}
+%union {
+    struct _syntax_tree_node *node;
+}
 
 /* TODO: Your tokens here. */
 %token <node> ERROR
-%token <node> ADD
+%token <node> ADD SUB MUL DIV
+%token <node> LT LTE GT GTE EQ NEQ ASSIGN
+%token <node> SEMICOLON COMMA OPENPAREN CLOSEPAREN OPENBRACKET CLOSEBRACKET OPENBRACE CLOSEBRACE
+%token <node> INTEGERNUM FLOATNUM
+%token <node> ID
+%token <node> ELSE IF INT RETURN VOID WHILE FLOAT
+
 %type <node> program
+%type <node> type-specifier relop addop mulop
+%type <node> declaration-list declaration var-declaration fun-declaration local-declarations
+%type <node> compound-stmt statement-list statement expression-stmt iteration-stmt selection-stmt return-stmt
+%type <node> expression simple-expression var additive-expression term factor integer float call
+%type <node> params param-list param args arg-list
 
 %start program
 
@@ -48,8 +61,103 @@ program: declaration-list {$$ = node( "program", 1, $1); gt->root = $$;}
        ;
 */
 
-program : ;
-
+program : declaration-list { $$ = node("program", 1, $1); gt->root = $$; }
+        ;
+declaration-list : declaration-list declaration { $$ = node("declaration-list", 2, $1, $2); }
+                 | declaration { $$ = node("declaration-list", 1, $1); }
+                 ;
+declaration : var-declaration { $$ = node("declaration", 1, $1); }
+            | fun-declaration { $$ = node("declaration", 1, $1); }
+            ;
+var-declaration : type-specifier ID SEMICOLON { $$ = node("var-declaration", 3, $1, $2, $3); }
+                | type-specifier ID OPENBRACKET INTEGERNUM CLOSEBRACKET SEMICOLON { $$ = node("var-declaration", 6, $1, $2, $3, $4, $5, $6); }
+                ;
+type-specifier : INT { $$ = node("type-specifier", 1, $1); }
+               | FLOAT { $$ = node("type-specifier", 1, $1); }
+               | VOID { $$ = node("type-specifier", 1, $1); }
+               ;
+fun-declaration : type-specifier ID OPENPAREN params CLOSEPAREN compound-stmt { $$ = node("fun-declaration", 6, $1, $2, $3, $4, $5, $6); }
+                ;
+params : param-list { $$ = node("params", 1, $1); }
+       | VOID { $$ = node("params", 1, $1); }
+       ;
+param-list : param-list COMMA param { $$ = node("param-list", 3, $1, $2, $3); }
+           | param { $$ = node("param-list", 1, $1); }
+           ;
+param : type-specifier ID { $$ = node("param", 2, $1, $2); }
+      | type-specifier ID OPENBRACKET CLOSEBRACKET { $$ = node("param", 4, $1, $2, $3, $4); }
+      ;
+compound-stmt : OPENBRACE local-declarations statement-list CLOSEBRACE { $$ = node("compound-stmt", 4, $1, $2, $3, $4); }
+              ;
+local-declarations : local-declarations var-declaration { $$ = node("local-declarations", 2, $1, $2); }
+                   |  { $$ = node("local-declarations", 0); }
+                   ;
+statement-list : statement-list statement { $$ = node("statement-list", 2, $1, $2); }
+               | { $$ = node("statement-list", 0); }
+               ;
+statement : expression-stmt { $$ = node("statement", 1, $1); }
+          | compound-stmt { $$ = node("statement", 1, $1); }
+          | selection-stmt { $$ = node("statement", 1, $1); }
+          | iteration-stmt { $$ = node("statement", 1, $1); }
+          | return-stmt { $$ = node("statement", 1, $1); }
+          ;
+expression-stmt : expression SEMICOLON { $$ = node("expression-stmt", 2, $1, $2); }
+                | SEMICOLON { $$ = node("expression-stmt", 1, $1); }
+                ;
+selection-stmt : IF OPENPAREN expression CLOSEPAREN statement { $$ = node("selection-stmt", 5, $1, $2, $3, $4, $5); }
+               | IF OPENPAREN expression CLOSEPAREN statement ELSE statement { $$ = node("selection-stmt", 7, $1, $2, $3, $4, $5, $6, $7); }
+               ;
+iteration-stmt : WHILE OPENPAREN expression CLOSEPAREN statement { $$ = node("iteration-stmt", 5, $1, $2, $3, $4, $5); }
+               ;
+return-stmt : RETURN SEMICOLON { $$ = node("return-stmt", 2, $1, $2); }
+            | RETURN expression SEMICOLON { $$ = node("return-stmt", 3, $1, $2, $3); }
+            ;
+expression : var ASSIGN expression { $$ = node("expression", 3, $1, $2, $3); }
+           | simple-expression { $$ = node("expression", 1, $1); }
+           ;
+var : ID { $$ = node("var", 1, $1); }
+    | ID OPENBRACKET expression CLOSEBRACKET { $$ = node("var", 4, $1, $2, $3, $4); }
+    ;
+simple-expression : additive-expression relop additive-expression { $$ = node("simple-expression", 3, $1, $2, $3); }
+                  | additive-expression { $$ = node("simple-expression", 1, $1); }
+                  ;
+relop : LTE { $$ = node("relop", 1, $1); }
+      | LT { $$ = node("relop", 1, $1); }
+      | GT { $$ = node("relop", 1, $1); }
+      | GTE { $$ = node("relop", 1, $1); }
+      | EQ { $$ = node("relop", 1, $1); }
+      | NEQ { $$ = node("relop", 1, $1); }
+      ;
+additive-expression : additive-expression addop term { $$ = node("additive-expression", 3, $1, $2, $3); }
+                    | term { $$ = node("additive-expression", 1, $1); }
+                    ;
+addop : ADD { $$ = node("addop", 1, $1); }
+      | SUB { $$ = node("addop", 1, $1); }
+      ;
+term : term mulop factor { $$ = node("term", 3, $1, $2, $3); }
+     | factor { $$ = node("term", 1, $1); }
+     ;
+mulop : MUL { $$ = node("mulop", 1, $1); }
+      | DIV { $$ = node("mulop", 1, $1); }
+      ;
+factor : OPENPAREN expression CLOSEPAREN { $$ = node("factor", 3, $1, $2, $3); }
+       | var { $$ = node("factor", 1, $1); }
+       | call { $$ = node("factor", 1, $1); }
+       | integer { $$ = node("factor", 1, $1); }
+       | float { $$ = node("factor", 1, $1); }
+       ;
+integer : INTEGERNUM { $$ = node("integer", 1, $1); }
+        ;
+float : FLOATNUM { $$ = node("float", 1, $1); }
+      ;
+call : ID OPENPAREN args CLOSEPAREN { $$ = node("call", 4, $1, $2, $3, $4); }
+     ;
+args : arg-list { $$ = node("args", 1, $1); }
+     | { $$ = node("args", 0); }
+     ;
+arg-list : arg-list COMMA expression { $$ = node("arg-list", 3, $1, $2, $3); }
+         | expression { $$ = node("arg-list", 1, $1); }
+         ;
 %%
 
 /// The error reporting function.
