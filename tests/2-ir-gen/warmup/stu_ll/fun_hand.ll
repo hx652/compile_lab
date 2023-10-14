@@ -1,0 +1,13 @@
+define i32 @callee(i32 %a){
+ENTRY:
+    ; return 2 * a
+    %r = mul i32 2, %a
+    ret i32 %r
+}
+
+define i32 @main(){
+ENTRY:
+    ; return callee(110)
+    %r = call i32 @callee(i32 110)
+    ret i32 %r
+}
