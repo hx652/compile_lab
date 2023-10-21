@@ -109,5 +109,10 @@ class CminusfBuilder : public ASTVisitor {
         // function that is being built
         Function *func = nullptr;
         // TODO: you should add more fields to store state
+        Type *type = nullptr;
+        Value *value = nullptr;
+        std::string id;
+        // Indicate we want address or value
+        bool l_value;
     } context;
 };
