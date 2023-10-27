@@ -394,7 +394,6 @@ Value* CminusfBuilder::visit(ASTVar &node) {
         // Check if the index is negtive
         auto trueBB = BasicBlock::create(module.get(), "", context.func);
         auto falseBB = BasicBlock::create(module.get(), "", context.func);
-        auto succBB = BasicBlock::create(module.get(), "", context.func);
 
         auto cond = builder->create_icmp_ge(offset, CONST_INT(0));
 
@@ -403,8 +402,7 @@ Value* CminusfBuilder::visit(ASTVar &node) {
         builder->set_insert_point(falseBB);
         auto fun = static_cast<Function *>(scope.find("neg_idx_except"));
         builder->create_call(fun, {});
-        builder->create_br(succBB);
-
+        builder->create_br(trueBB);
 
         builder->set_insert_point(trueBB);
         Value *address;
@@ -429,9 +427,6 @@ Value* CminusfBuilder::visit(ASTVar &node) {
         else {
             context.value = builder->create_load(address);
         }
-        builder->create_br(succBB);
-        
-        builder->set_insert_point(succBB);
     }
     LOG(DEBUG) << "leave ASTvar for " << node.id;
     return nullptr;
