@@ -30,8 +30,7 @@ int main() {
 void declare_global(CodeGen *codegen) {
     // 声明全局变量 a
     // 将 a 放到 .bss 段中
-    codegen->append_inst(".section .bss, \"aw\", @nobits",
-                         ASMInstruction::Atrribute);
+    codegen->append_inst(".section .bss, \"aw\", @nobits", ASMInstruction::Atrribute);
     // 标记 a 为全局变量
     codegen->append_inst(".globl a", ASMInstruction::Atrribute);
     // 标记 a 为数据对象 (变量)
@@ -73,26 +72,25 @@ void translate_main(CodeGen *codegen) {
     codegen->append_inst("store i32 10, i32* @a", ASMInstruction::Comment);
     // 将 10 写入 a 对应的内存空间中
     // TODO: 获得 a 的地址
-    codegen->append_inst("");
+    codegen->append_inst("la.local $t0, a");
     // TODO: 将 10 写入 a 对应的内存空间中
-    codegen->append_inst("");
+    codegen->append_inst("addi.w", {"$t1", "$zero", "10"});
+    codegen->append_inst("st.w", {"$t1", "$t0", "0"});
 
     /* %op0 = load i32, i32* @a */
     codegen->append_inst("%op0 = load i32, i32* @a", ASMInstruction::Comment);
     // 将 a 的值写入 %op0 对应的内存空间中
-    offset_map["%op0"] = ; // TODO: 请填空
+    offset_map["%op0"] = -20; // TODO: 请填空
     // TODO: 获得 a 的地址, 并存储在 $t0 中
-    codegen->append_inst("");
+    codegen->append_inst("la.local $t0, a");
     // 将 a 的值写入 %op0 对应的内存空间中
     codegen->append_inst("ld.w $t1, $t0, 0");
-    codegen->append_inst("st.w",
-                         {"$t1", "$fp", std::to_string(offset_map["%op0"])});
+    codegen->append_inst("st.w", {"$t1", "$fp", std::to_string(offset_map["%op0"])});
 
     /* ret i32 %op0 */
     codegen->append_inst("ret i32 %op0", ASMInstruction::Comment);
     // 将 %op0 的值写入 $a0
-    codegen->append_inst("ld.w",
-                         {"$a0", "$fp", std::to_string(offset_map["%op0"])});
+    codegen->append_inst("ld.w", {"$a0", "$fp", std::to_string(offset_map["%op0"])});
     codegen->append_inst("b main_exit");
 
     /* main 函数的 Epilogue (收尾) */
