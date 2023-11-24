@@ -74,11 +74,14 @@ class CodeGen {
         unsigned frame_size{0}; // 当前函数的栈帧大小
         std::unordered_map<Value *, int> offset_map{}; // 指针相对 fp 的偏移
 
+        int fcmp_number;
+
         void clear() {
             func = nullptr;
             inst = nullptr;
             frame_size = 0;
             offset_map.clear();
+            fcmp_number = 0;
         }
 
     } context;
