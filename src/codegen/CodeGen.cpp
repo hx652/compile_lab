@@ -227,18 +227,68 @@ void CodeGen::gen_ret() {
     append_inst("b " + context.func->get_name() + "_exit");
 }
 
+std::vector<PhiInst *> CodeGen::check_phi(BasicBlock *bb, BasicBlock *succ_bb, std::vector<int> &index){
+    std::vector<PhiInst *> phi;
+    phi.clear();
+    index.clear();
+    for (Instruction &instr : succ_bb->get_instructions()) {
+        if (instr.is_phi()) {
+            PhiInst *cur = static_cast<PhiInst *>(&instr);
+            int n = cur->get_operands().size();
+            for (int i = 1; i < n; i += 2) {
+                if (cur->get_operands().at(i) == bb) {
+                    phi.push_back(cur);
+                    index.push_back(i - 1);
+                }
+            }
+        }
+    }
+    return phi;
+}
+
+void CodeGen::insert_copy_for_phi(std::vector<PhiInst *> phi, std::vector<int> index){
+    LOG(INFO) << "insert copy for phi, number of phis: " << phi.size();
+    for (int i = 0; i < phi.size(); ++i) {
+        PhiInst *cur = phi.at(i);
+        Value *src_op = cur->get_operand(index.at(i));
+        if (cur->get_type()->is_float_type()) {
+            load_to_freg(src_op, FReg::ft(0));
+            store_from_freg(cur, FReg::ft(0));
+        }
+        else {
+            load_to_greg(src_op, Reg::t(0));
+            store_from_greg(cur, Reg::t(0));
+        }
+    }
+}
+
 void CodeGen::gen_br() {
     auto *branchInst = static_cast<BranchInst *>(context.inst);
+    BasicBlock *cur_bb = branchInst->get_parent();
     if (branchInst->is_cond_br()) {
         // TODO 补全条件跳转的情况
         auto *cond = static_cast<Value *>(branchInst->get_operand(0));
         auto *trueBB = static_cast<BasicBlock *>(branchInst->get_operand(1));
         auto *falseBB = static_cast<BasicBlock *>(branchInst->get_operand(2));
         load_to_greg(cond, Reg::t(0));
-        append_inst("bnez $t0, " + label_name(trueBB));
+        append_inst("beqz $t0, "+context.func->get_name()+"_cond_br_"+std::to_string(context.cond_br_number)+"_false");
+        std::vector<int> index;
+        std::vector<PhiInst *> phi = check_phi(cur_bb, trueBB, index);
+        insert_copy_for_phi(phi, index);
+        append_inst("b " + label_name(trueBB));
+        append_inst(context.func->get_name()+"_cond_br_"+std::to_string(context.cond_br_number)+"_false", ASMInstruction::Label);
+        std::vector<PhiInst *> phi1 = check_phi(cur_bb, falseBB, index);
+        insert_copy_for_phi(phi1, index);
         append_inst("b " + label_name(falseBB));
+        context.cond_br_number++;
     } else {
         auto *branchbb = static_cast<BasicBlock *>(branchInst->get_operand(0));
+        LOG(INFO) << "translate " << branchInst->print() <<" in basicblock " << branchInst->get_parent()->get_name();
+        LOG(INFO) << "check if basicblock " << branchbb->get_name() << " has phi";
+        std::vector<int> index;
+        std::vector<PhiInst *> phi = check_phi(cur_bb, branchbb, index);
+        LOG(INFO) << "find phi number: " << phi.size();
+        insert_copy_for_phi(phi, index);
         append_inst("b " + label_name(branchbb));
     }
 }
@@ -627,7 +677,6 @@ void CodeGen::run() {
                         gen_fcmp();
                         break;
                     case Instruction::phi:
-                        throw not_implemented_error{"need to handle phi!"};
                         break;
                     case Instruction::call:
                         gen_call();

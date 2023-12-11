@@ -114,5 +114,7 @@ class CminusfBuilder : public ASTVisitor {
         std::string id;
         // Indicate we want address or value
         bool l_value;
+        // next basicblock index for this function
+        int next_index;
     } context;
 };

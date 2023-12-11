@@ -28,8 +28,21 @@ class Dominators : public Pass {
     void create_dom_tree_succ(Function *f);
 
     // TODO 补充需要的函数
+    BasicBlock *intersect(BasicBlock *b1, BasicBlock *b2);
+    void postorder_traverse(Function *f);
+    void postorder_index(BasicBlock *start);
 
+    // variables below will be maintained module wide, not function wide
     std::map<BasicBlock *, BasicBlock *> idom_{};  // 直接支配
     std::map<BasicBlock *, BBSet> dom_frontier_{}; // 支配边界集合
     std::map<BasicBlock *, BBSet> dom_tree_succ_blocks_{}; // 支配树中的后继节点
+
+    // variables below will be maintained function wide, not module wide
+    // index each BasicBlock based on postorder, starting from 0
+    std::map<int, BasicBlock *> index_to_BB{};
+    std::map<BasicBlock *, int> BB_to_index{};
+    // the number of nodes that we finished visited
+    int next_index;
+    // whether a basicblock waits for finish of recursive calls
+    std::map<BasicBlock *, bool> is_waiting{};
 };

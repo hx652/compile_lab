@@ -131,6 +131,7 @@ Value* CminusfBuilder::visit(ASTFunDeclaration &node) {
     scope.push(node.id, func);
     context.func = func;
     auto funBB = BasicBlock::create(module.get(), "entry", func);
+    context.next_index = 2;
     builder->set_insert_point(funBB);
     scope.enter();
     std::vector<Value *> args;
@@ -240,9 +241,12 @@ Value* CminusfBuilder::visit(ASTSelectionStmt &node) {
         cond = builder->create_fcmp_ne(val, CONST_FP(0.0));
     }
     
-    auto IF_TRUE = BasicBlock::create(module.get(), "", context.func);
-    auto IF_FALSE = BasicBlock::create(module.get(), "", context.func);
-    auto COUNTINUE = BasicBlock::create(module.get(), "", context.func);
+    auto IF_TRUE = BasicBlock::create(module.get(), std::to_string(context.next_index), context.func);
+    context.next_index++;
+    auto IF_FALSE = BasicBlock::create(module.get(), std::to_string(context.next_index), context.func);
+    context.next_index++;
+    auto COUNTINUE = BasicBlock::create(module.get(), std::to_string(context.next_index), context.func);
+    context.next_index++;
     
     if (node.else_statement == nullptr) {
         builder->create_cond_br(cond, IF_TRUE, COUNTINUE);
@@ -279,7 +283,8 @@ Value* CminusfBuilder::visit(ASTIterationStmt &node) {
     // TODO: This function is empty now.
     // Add some code here.
     LOG(DEBUG) << "visit ASTIterationStmt";
-    auto LOOP = BasicBlock::create(module.get(), "", context.func);
+    auto LOOP = BasicBlock::create(module.get(), std::to_string(context.next_index), context.func);
+    context.next_index++;
     if (!builder->get_insert_block()->is_terminated()) {
         builder->create_br(LOOP);
     }
@@ -307,8 +312,10 @@ Value* CminusfBuilder::visit(ASTIterationStmt &node) {
     }
 
     Value *cond;
-    auto IF_TRUE = BasicBlock::create(module.get(), "", context.func);
-    auto COUNTINUE = BasicBlock::create(module.get(), "", context.func);
+    auto IF_TRUE = BasicBlock::create(module.get(), std::to_string(context.next_index), context.func);
+    context.next_index++;
+    auto COUNTINUE = BasicBlock::create(module.get(), std::to_string(context.next_index), context.func);
+    context.next_index++;
     if (val->get_type()->is_integer_type()) {
         cond = builder->create_icmp_ne(val, CONST_INT(0));
     }
@@ -392,8 +399,10 @@ Value* CminusfBuilder::visit(ASTVar &node) {
         }
         
         // Check if the index is negtive
-        auto trueBB = BasicBlock::create(module.get(), "", context.func);
-        auto falseBB = BasicBlock::create(module.get(), "", context.func);
+        auto trueBB = BasicBlock::create(module.get(), std::to_string(context.next_index), context.func);
+        context.next_index++;
+        auto falseBB = BasicBlock::create(module.get(), std::to_string(context.next_index), context.func);
+        context.next_index++;
 
         auto cond = builder->create_icmp_ge(offset, CONST_INT(0));
 

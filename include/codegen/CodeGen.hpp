@@ -61,7 +61,9 @@ class CodeGen {
     void gen_sitofp();
     void gen_fptosi();
     void gen_epilogue();
-
+    std::vector<PhiInst *> check_phi(BasicBlock *bb, BasicBlock *succ_bb, std::vector<int> &index);
+    void insert_copy_for_phi(std::vector<PhiInst *> phi, std::vector<int> index);
+    
     static std::string label_name(BasicBlock *bb) {
         return "." + bb->get_parent()->get_name() + "_" + bb->get_name();
     }
@@ -75,6 +77,7 @@ class CodeGen {
         std::unordered_map<Value *, int> offset_map{}; // 指针相对 fp 的偏移
 
         int fcmp_number;
+        int cond_br_number;
 
         void clear() {
             func = nullptr;
@@ -82,6 +85,7 @@ class CodeGen {
             frame_size = 0;
             offset_map.clear();
             fcmp_number = 0;
+            cond_br_number = 0;
         }
 
     } context;
